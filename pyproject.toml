@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "holistic-wind-farm-control"
+version = "0.1.0"
+description = "Investigation of the impact of holistic control of turbines in a wind farm"
+authors = ["Robert Dibble <robertdibble@live.co.uk>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.9"
+py-wake = "^2"
+matplotlib = "^3"
+setuptools = "^69"
+
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6"
+icecream = "^2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
