@@ -21,7 +21,3 @@ Investigation of the impact of holistic control of turbines in a wind farm
 - Turbulence impact on O&M and uptime
 
 ## To do
-Increase speed
-- Identify problematic model type
-- Identify problematic model values
-- Time for flowmap vs aep
