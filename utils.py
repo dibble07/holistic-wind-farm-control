@@ -23,6 +23,7 @@ CAPEX_GW = (3150 + 3901) / 2 * 1e6
 OPEX_GWy = (102 + 116) / 2 * 1e6
 LIFESPAN = 30
 
+
 # load wind farm model
 def get_wind_farm_model(nt: int = 9):
     # load turbine locations
