@@ -85,3 +85,4 @@ def calc_metrics(sim_res, show=False):
     if show:
         print(f"LCoE [USD/MWh]: {lcoe:,.3f}")
         print(f"Capacity factor [%]: {cap_fac:,.2f}")
+    return lcoe, cap_fac
