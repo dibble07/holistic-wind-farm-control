@@ -55,7 +55,7 @@ wfm_lossless = PropagateDownwind(
 
 
 # run simulation
-def run_sim(wfm=wfm_low, x=wt9_x, y=wt9_y, yaw=0, ws=np.arange(0, 31, 3)):
+def run_sim(wfm=wfm_low, x=wt9_x, y=wt9_y, yaw=0, ws=np.arange(0, 31)):
     sim_res = wfm(
         x=x,
         y=y,
