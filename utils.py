@@ -54,11 +54,11 @@ wfm_lossless = PropagateDownwind(
 )
 
 
-# define simulation function
-def run_sim(yaw=0, ws=np.arange(0, 31, 3)):
-    sim_res = wfm_low(
-        x=wt9_x,
-        y=wt9_y,
+# run simulation
+def run_sim(wfm=wfm_low, x=wt9_x, y=wt9_y, yaw=0, ws=np.arange(0, 31, 3)):
+    sim_res = wfm(
+        x=x,
+        y=y,
         tilt=0,
         yaw=yaw,
         n_cpu=None,
@@ -66,3 +66,22 @@ def run_sim(yaw=0, ws=np.arange(0, 31, 3)):
         wd=270,
     )
     return sim_res
+
+
+# calculate metrics
+def calc_metrics(sim_res, show=False):
+    nt = len(sim_res.wt)
+    power_installed = (
+        sim_res.windFarmModel.windTurbines.powerCtFunction.power_ct_tab[0].max()
+        / 1e9
+        * nt
+    )
+    lcoe = (
+        (OPEX_GWy + CAPEX_GW / LIFESPAN)
+        * power_installed
+        / (sim_res.aep().sum().values * 1000)
+    )
+    cap_fac = sim_res.aep().sum().values / (power_installed * 365.25 * 24) * 100
+    if show:
+        print(f"LCoE [USD/MWh]: {lcoe:,.3f}")
+        print(f"Capacity factor [%]: {cap_fac:,.2f}")
