@@ -21,7 +21,11 @@ from py_wake.wind_farm_models import All2AllIterative, PropagateDownwind
 # technology lifespans https://atb.nrel.gov/electricity/2023/definitions#costrecoveryperiod
 # downtime https://blog.windurance.com/the-truth-about-pitch-system-downtime and https://energyfollower.com/how-long-do-wind-turbines-last/
 CAPEX_GW = (3150 + 3901) / 2 * 1e6
-OPEX_GWy = (102 + 116) / 2 * 1e6
+_opex1 = (0.29, 102)
+_opex2 = (0.46, 116)
+_grad = (_opex2[1] - _opex1[1]) / (_opex2[0] - _opex1[0])
+OPEX_FIXED_GWy = (_opex1[1] - _grad * _opex1[0]) * 1e6
+OPEX_VAR_GWh = _grad / (365.25 * 24)
 LIFESPAN = 30
 DOWNTIME = 0.02
 
@@ -96,21 +100,16 @@ def calc_metrics(sim_res, sim_res_base, show=False):
     tke_ratio = tke_vel / tke_vel_base
 
     # calculate metrics of interest
+    aep = sim_res.aep().sum().values
+    uptime = 1 - DOWNTIME * tke_ratio
     lcoe = (
-        (OPEX_GWy + CAPEX_GW / LIFESPAN)
-        * power_installed
-        / (sim_res.aep().sum().values * (1 - DOWNTIME * tke_ratio) * 1000)
-    )
-    cap_fac = (
-        sim_res.aep().sum().values
-        * (1 - DOWNTIME * tke_ratio)
-        / (power_installed * 365.25 * 24)
-        * 100
-    )
+        (OPEX_FIXED_GWy + CAPEX_GW / LIFESPAN) * power_installed + OPEX_VAR_GWh * aep
+    ) / (aep * uptime * 1000)
+    cap_fac = aep * uptime / (power_installed * 365.25 * 24)
 
     # print values
     if show:
         print(f"LCoE [USD/MWh]: {lcoe:,.3f}")
-        print(f"Capacity factor [%]: {cap_fac:,.3f}")
+        print(f"Capacity factor [%]: {100*cap_fac:,.3f}")
 
     return lcoe, cap_fac
