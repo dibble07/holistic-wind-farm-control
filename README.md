@@ -15,5 +15,4 @@ Investigation of the impact of holistic control of turbines in a wind farm
     - LiDAR adjustments
 
 ## To do
-- Don't aggregate TKE_ratio
 - Paralellise metric calculations

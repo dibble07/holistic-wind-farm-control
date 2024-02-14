@@ -31,7 +31,7 @@ DOWNTIME = 0.02
 
 # define default ranges
 WS_DEFAULT = np.arange(0, 31)
-WD_DEFAULT = np.arange(0, 360, 45)
+WD_DEFAULT = np.arange(0, 360, 15)
 
 # load farm models
 wfm_high = All2AllIterative(
@@ -90,8 +90,10 @@ def calc_metrics(sim_res, sim_res_base, show=False):
     Sector_frequency = sim_res.Sector_frequency / sim_res.Sector_frequency.sum()
 
     # calculate turbulent kinetic energy ratio
-    tke_vel = ((sim_res.TI_eff * sim_res.ws) ** 2 * P).sum().values
-    tke_vel_base = ((sim_res_base.TI_eff * sim_res_base.ws) ** 2 * P_base).sum().values
+    tke_vel = ((sim_res.TI_eff * sim_res.ws) ** 2 * P).sum(["wd", "ws"])
+    tke_vel_base = ((sim_res_base.TI_eff * sim_res_base.ws) ** 2 * P_base).sum(
+        ["wd", "ws"]
+    )
     tke_ratio = tke_vel / tke_vel_base
 
     # calculate metrics of interest
