@@ -115,3 +115,18 @@ def calc_metrics(sim_res, sim_res_base, show=False):
         )
 
     return aep, lcoe, cap_fac
+
+
+# combination simulation and evaluation
+def run_sim_and_calculate_metrics(
+    sim_res_base,
+    wfm=wfm_low,
+    x=wt9_x,
+    y=wt9_y,
+    yaw=0,
+    ws=WS_DEFAULT,
+    wd=WD_DEFAULT,
+    show=False,
+):
+    sim_res = run_sim(wfm=wfm, x=x, y=y, yaw=yaw, ws=ws, wd=wd)
+    return calc_metrics(sim_res=sim_res, sim_res_base=sim_res_base, show=show)
