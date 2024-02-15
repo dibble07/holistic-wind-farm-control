@@ -135,11 +135,22 @@ def run_sim_and_calculate_metrics(
 
 
 # aggregate metrics
-def aggregate_metrics(aep, lcoe, cap_fac, Sector_frequency):
-    lcoe_direction = (lcoe * (aep * 1000)).sum("wt") / (aep * 1000).sum("wt")
-    cap_fac_direction = cap_fac.weighted(Sector_frequency).mean("wt")
-    lcoe_overall = (lcoe * (aep * 1000)).sum(["wt", "wd"]) / (aep * 1000).sum(
-        ["wt", "wd"]
-    )
-    cap_fac_overall = cap_fac.weighted(Sector_frequency).mean(["wt", "wd"])
+def aggregate_metrics(aep=None, lcoe=None, cap_fac=None, Sector_frequency=None):
+    # lcoe
+    if aep is not None and lcoe is not None:
+        lcoe_direction = (lcoe * (aep * 1000)).sum("wt") / (aep * 1000).sum("wt")
+        lcoe_overall = (lcoe * (aep * 1000)).sum(["wt", "wd"]) / (aep * 1000).sum(
+            ["wt", "wd"]
+        )
+    else:
+        lcoe_direction = None
+        lcoe_overall = None
+    # cap_fac
+    if cap_fac is not None and Sector_frequency is not None:
+        cap_fac_direction = cap_fac.weighted(Sector_frequency).mean("wt")
+        cap_fac_overall = cap_fac.weighted(Sector_frequency).mean(["wt", "wd"])
+    else:
+        cap_fac_direction = None
+        cap_fac_overall = None
+
     return lcoe_direction, cap_fac_direction, lcoe_overall, cap_fac_overall
