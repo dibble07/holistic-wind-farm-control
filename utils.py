@@ -78,22 +78,15 @@ def run_sim(wfm=wfm_low, x=wt9_x, y=wt9_y, yaw=0, ws=WS_DEFAULT, wd=WD_DEFAULT):
 
 
 # calculate metrics
-def calc_metrics(sim_res, sim_res_base, show=False):
+def calc_metrics(sim_res, sim_res_base, Sector_frequency, P, show=False):
     # unpack values
     rated_power = (
         sim_res.windFarmModel.windTurbines.powerCtFunction.power_ct_tab[0].max() / 1e9
     )
 
-    # scaled probabilities
-    P = sim_res.P / sim_res.P.sum()
-    P_base = sim_res_base.P / sim_res_base.P.sum()
-    Sector_frequency = sim_res.Sector_frequency / sim_res.Sector_frequency.sum()
-
     # calculate turbulent kinetic energy ratio
     tke_vel = ((sim_res.TI_eff * sim_res.ws) ** 2 * P).sum(["wd", "ws"])
-    tke_vel_base = ((sim_res_base.TI_eff * sim_res_base.ws) ** 2 * P_base).sum(
-        ["wd", "ws"]
-    )
+    tke_vel_base = ((sim_res_base.TI_eff * sim_res_base.ws) ** 2 * P).sum(["wd", "ws"])
     tke_ratio = tke_vel / tke_vel_base
 
     # calculate metrics of interest
@@ -108,11 +101,12 @@ def calc_metrics(sim_res, sim_res_base, show=False):
 
     # print values
     if show:
-        print(f"AEP [GWh]: {aep.sum():,.3f}")
-        print(f"LCoE [USD/MWh]: {(lcoe * aep * 1000).sum()/(aep * 1000).sum():,.3f}")
-        print(
-            f"Capacity factor [%]: {100*cap_fac.weighted(Sector_frequency).mean():,.3f}"
+        _, _, lcoe_overall, cap_fac_overall = aggregate_metrics(
+            aep, lcoe, cap_fac, Sector_frequency
         )
+        print(f"AEP [GWh]: {aep.sum():,.3f}")
+        print(f"LCoE [USD/MWh]: {lcoe_overall:,.3f}")
+        print(f"Capacity factor [%]: {100*cap_fac_overall:,.3f}")
 
     return aep, lcoe, cap_fac
 
@@ -120,6 +114,8 @@ def calc_metrics(sim_res, sim_res_base, show=False):
 # combination simulation and evaluation
 def run_sim_and_calculate_metrics(
     sim_res_base,
+    Sector_frequency,
+    P,
     wfm=wfm_low,
     x=wt9_x,
     y=wt9_y,
@@ -129,4 +125,21 @@ def run_sim_and_calculate_metrics(
     show=False,
 ):
     sim_res = run_sim(wfm=wfm, x=x, y=y, yaw=yaw, ws=ws, wd=wd)
-    return calc_metrics(sim_res=sim_res, sim_res_base=sim_res_base, show=show)
+    return calc_metrics(
+        sim_res=sim_res,
+        sim_res_base=sim_res_base,
+        Sector_frequency=Sector_frequency,
+        P=P,
+        show=show,
+    )
+
+
+# aggregate metrics
+def aggregate_metrics(aep, lcoe, cap_fac, Sector_frequency):
+    lcoe_direction = (lcoe * (aep * 1000)).sum("wt") / (aep * 1000).sum("wt")
+    cap_fac_direction = cap_fac.weighted(Sector_frequency).mean("wt")
+    lcoe_overall = (lcoe * (aep * 1000)).sum(["wt", "wd"]) / (aep * 1000).sum(
+        ["wt", "wd"]
+    )
+    cap_fac_overall = cap_fac.weighted(Sector_frequency).mean(["wt", "wd"])
+    return lcoe_direction, cap_fac_direction, lcoe_overall, cap_fac_overall
