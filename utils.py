@@ -91,7 +91,7 @@ def calc_metrics(sim_res, sim_res_base, Sector_frequency, P, show=False):
 
     # calculate metrics of interest
     uptime = 1 - DOWNTIME * tke_ratio
-    aep = sim_res.aep().sum("ws") * uptime
+    aep = (sim_res.Power * P).sum("ws") * 8760 / 1e9 * uptime
     fixed_cost = (OPEX_FIXED_GWy + CAPEX_GW / LIFESPAN) * rated_power * Sector_frequency
     variable_cost = OPEX_VAR_GWh * aep
     lcoe = (fixed_cost + variable_cost) / (aep * 1000)
