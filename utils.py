@@ -83,6 +83,9 @@ def calc_metrics(sim_res, sim_res_base, Sector_frequency, P, show=False):
     rated_power = (
         sim_res.windFarmModel.windTurbines.powerCtFunction.power_ct_tab[0].max() / 1e9
     )
+    sim_res_base = sim_res_base.sel(wd=sim_res.wd)
+    Sector_frequency = Sector_frequency.sel(wd=sim_res.wd)
+    P = P.sel(wd=sim_res.wd)
 
     # calculate turbulent kinetic energy ratio
     tke_vel = ((sim_res.TI_eff * sim_res.ws) ** 2 * P).sum(["wd", "ws"])
