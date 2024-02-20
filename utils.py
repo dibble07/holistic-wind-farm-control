@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 from py_wake.deficit_models import FugaDeficit, NoWakeDeficit, ZongGaussianDeficit
 from py_wake.deflection_models import FugaDeflection, JimenezWakeDeflection
@@ -15,6 +17,7 @@ from py_wake.rotor_avg_models import CGIRotorAvg
 from py_wake.superposition_models import LinearSum
 from py_wake.turbulence_models import STF2017TurbulenceModel
 from py_wake.wind_farm_models import All2AllIterative, PropagateDownwind
+from scipy import optimize
 
 # loads cost values
 # capex and opex https://atb.nrel.gov/electricity/2023/index
@@ -157,3 +160,66 @@ def aggregate_metrics(aep=None, lcoe=None, cap_fac=None, Sector_frequency=None):
         cap_fac_overall = None
 
     return lcoe_direction, cap_fac_direction, lcoe_overall, cap_fac_overall
+
+
+# define constants
+YAW_SCALE = 30
+
+
+# optimise for a single direction
+def optimise_direction(wd, sim_res_base, Sector_frequency, P, lcoe_direction_base):
+
+    # define constants
+    ws = sim_res_base.ws.values.tolist()
+    yaw_shape = (len(sim_res_base.wt), 1, len(ws))
+    cut_in_index = np.argmax(
+        sim_res_base.windFarmModel.windTurbines.power(sim_res_base.ws) > 0
+    )
+    cut_in_speed = sim_res_base.ws[cut_in_index].values.tolist()
+
+    # optimise for power output across independent wind speeds
+    logging.info("starting power based optimisation")
+    yaw_opt_power = np.full(yaw_shape, np.nan)
+    next_x0 = np.ones(len(sim_res_base.wt)) / YAW_SCALE
+    for i, ws_ in enumerate(sim_res_base.ws.values):
+        if ws_ >= cut_in_speed:
+            # define objective function for power
+            def obj_power_single(yaw_norm):
+                sim_res = run_sim(yaw=yaw_norm * YAW_SCALE, ws=ws_, wd=wd)
+                power = sim_res.Power.sel(ws=ws_, wd=wd).sum("wt")
+                power_base = sim_res_base.Power.sel(ws=ws_, wd=wd).sum("wt")
+                obj = -(power / power_base).values.tolist()
+                return obj
+
+            res = optimize.minimize(fun=obj_power_single, x0=next_x0)
+            next_x0 = res.x
+            yaw_opt_power[:, :, i] = res.x.reshape(-1, 1) * YAW_SCALE
+        else:
+            yaw_opt_power[:, :, i] = np.zeros((len(sim_res_base.wt), 1))
+
+    # define objective function for lcoe
+    def obj_lcoe_single(yaw_norm):
+        sim_res = run_sim(yaw=yaw_norm.reshape(yaw_shape) * YAW_SCALE, wd=wd)
+        aep, lcoe, _ = calc_metrics(
+            sim_res=sim_res,
+            sim_res_base=sim_res_base,
+            Sector_frequency=Sector_frequency,
+            P=P,
+        )
+        _, _, lcoe_overall, _ = aggregate_metrics(
+            aep=aep, lcoe=lcoe, Sector_frequency=Sector_frequency
+        )
+        obj = (lcoe_overall / lcoe_direction_base).values.tolist()
+        return obj
+
+    # optimise for lcoe across all wind speeds
+    logging.info("starting LCoE based optimisation")
+    res = optimize.minimize(
+        fun=obj_lcoe_single,
+        x0=yaw_opt_power.ravel() / YAW_SCALE,
+        method="SLSQP",
+        tol=1e-4,
+    )
+    yaw_opt_lcoe = res.x.reshape(yaw_shape) * YAW_SCALE
+
+    return yaw_opt_power, yaw_opt_lcoe
