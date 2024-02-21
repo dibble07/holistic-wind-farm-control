@@ -66,156 +66,146 @@ wfm_lossless = PropagateDownwind(
 )
 
 
-# run simulation
-def run_sim(wfm, x, y, yaw, ws, wd):
-    sim_res = wfm(
-        x=x,
-        y=y,
-        tilt=0,
-        yaw=yaw,
-        n_cpu=1,
-        ws=ws,
-        wd=wd,
-    )
-    return sim_res
-
-
 # calculate metrics
-def calc_metrics(sim_res, sim_res_base, Sector_frequency, P, show=False):
+def run_sim(
+    wfm, x, y, yaw, ws, wd, sim_res_ref=None, Sector_frequency=None, P=None, show=False
+):
+    # run simulation
+    sim_res = wfm(x=x, y=y, tilt=0, yaw=yaw, n_cpu=1, ws=ws, wd=wd)
+
+    # ensure probabilities (wind direction and speed) total 1
+    if Sector_frequency is None:
+        Sector_frequency = sim_res.Sector_frequency
+        if not np.isclose(Sector_frequency.sum(), 1):
+            logging.warning(
+                f"Sector frequency renormalised as total probability was {Sector_frequency.sum().values}"
+            )
+            Sector_frequency = Sector_frequency / Sector_frequency.sum()
+    if P is None:
+        P = sim_res.P
+        if not np.isclose(P.sum(), 1):
+            logging.warning(f"P renormalised as total probability was {P.sum().values}")
+            P = P / P.sum()
+
     # unpack values
-    rated_power = (
-        sim_res.windFarmModel.windTurbines.powerCtFunction.power_ct_tab[0].max() / 1e9
-    )
-    sim_res_base = sim_res_base.sel(wd=sim_res.wd)
-    Sector_frequency = Sector_frequency.sel(wd=sim_res.wd)
-    P = P.sel(wd=sim_res.wd)
+    rated_power = wfm.windTurbines.powerCtFunction.power_ct_tab[0].max() / 1e9
+    Sector_frequency = Sector_frequency.sel(wd=wd)
+    P = P.sel(wd=wd)
+
+    # subset baseline simulation
+    if sim_res_ref is None:
+        sim_res_ref = sim_res.sel(wd=wd)
+    else:
+        for attr in ["wd", "ws", "wt"]:
+            curr = getattr(sim_res, attr).values.tolist()
+            curr = curr if isinstance(curr, list) else [curr]
+            ref = getattr(sim_res_ref, attr).values.tolist()
+            ref = ref if isinstance(ref, list) else [ref]
+            if curr != ref:
+                msg = f"Simulations have different {attr} values. {curr} vs {ref}"
+                raise ValueError(msg)
+        sim_res_ref = sim_res_ref.sel(wd=wd)
 
     # calculate turbulent kinetic energy ratio
     tke_vel = ((sim_res.TI_eff * sim_res.ws) ** 2 * P).sum(["wd", "ws"])
-    tke_vel_base = ((sim_res_base.TI_eff * sim_res_base.ws) ** 2 * P).sum(["wd", "ws"])
+    tke_vel_base = ((sim_res_ref.TI_eff * sim_res_ref.ws) ** 2 * P).sum(["wd", "ws"])
     tke_ratio = tke_vel / tke_vel_base
 
     # calculate metrics of interest
     uptime = 1 - DOWNTIME * tke_ratio
-    aep = (sim_res.Power * P).sum("ws") * 8760 / 1e9 * uptime
+    sim_res["energy"] = (sim_res.Power * P).sum("ws") * 8760 / 1e9 * uptime
     fixed_cost = (OPEX_FIXED_GWy + CAPEX_GW / LIFESPAN) * rated_power * Sector_frequency
-    variable_cost = OPEX_VAR_GWh * aep
-    lcoe = (fixed_cost + variable_cost) / (aep * 1000)
-    cap_fac = aep / (
+    variable_cost = OPEX_VAR_GWh * sim_res.energy
+    sim_res["lcoe"] = (fixed_cost + variable_cost) / (sim_res.energy * 1000)
+    sim_res["cap_fac"] = sim_res.energy / (
         Sector_frequency * rated_power * (sim_res.wt * 0 + 1) * 365.25 * 24
+    )
+
+    # aggregate metrics
+    sim_res["lcoe_direction"] = (sim_res.lcoe * (sim_res.energy * 1000)).sum("wt") / (
+        sim_res.energy * 1000
+    ).sum("wt")
+    sim_res["lcoe_overall"] = (sim_res.lcoe * (sim_res.energy * 1000)).sum(
+        ["wt", "wd"]
+    ) / (sim_res.energy * 1000).sum(["wt", "wd"])
+    sim_res["cap_fac_direction"] = sim_res.cap_fac.weighted(Sector_frequency).mean("wt")
+    sim_res["cap_fac_overall"] = sim_res.cap_fac.weighted(Sector_frequency).mean(
+        ["wt", "wd"]
     )
 
     # print values
     if show:
-        _, _, lcoe_overall, cap_fac_overall = aggregate_metrics(
-            aep, lcoe, cap_fac, Sector_frequency
-        )
-        print(f"AEP [GWh]: {aep.sum():,.3f}")
-        print(f"LCoE [USD/MWh]: {lcoe_overall:,.3f}")
-        print(f"Capacity factor [%]: {100*cap_fac_overall:,.3f}")
+        print(f"Annual energy [GWh]: {sim_res.energy.sum():,.3f}")
+        print(f"LCoE [USD/MWh]: {sim_res.lcoe_overall:,.3f}")
+        print(f"Capacity factor [%]: {sim_res.cap_fac_overall*100:,.3f}")
 
-    return aep, lcoe, cap_fac
-
-
-# combination simulation and evaluation
-def run_sim_and_calculate_metrics(
-    sim_res_base,
-    Sector_frequency,
-    P,
-    wfm,
-    x,
-    y,
-    yaw,
-    ws,
-    wd,
-    show=False,
-):
-    sim_res = run_sim(wfm=wfm, x=x, y=y, yaw=yaw, ws=ws, wd=wd)
-    return calc_metrics(
-        sim_res=sim_res,
-        sim_res_base=sim_res_base,
-        Sector_frequency=Sector_frequency,
-        P=P,
-        show=show,
-    )
-
-
-# aggregate metrics
-def aggregate_metrics(aep=None, lcoe=None, cap_fac=None, Sector_frequency=None):
-    # lcoe
-    if aep is not None and lcoe is not None:
-        lcoe_direction = (lcoe * (aep * 1000)).sum("wt") / (aep * 1000).sum("wt")
-        lcoe_overall = (lcoe * (aep * 1000)).sum(["wt", "wd"]) / (aep * 1000).sum(
-            ["wt", "wd"]
-        )
-    else:
-        lcoe_direction = None
-        lcoe_overall = None
-    # cap_fac
-    if cap_fac is not None and Sector_frequency is not None:
-        cap_fac_direction = cap_fac.weighted(Sector_frequency).mean("wt")
-        cap_fac_overall = cap_fac.weighted(Sector_frequency).mean(["wt", "wd"])
-    else:
-        cap_fac_direction = None
-        cap_fac_overall = None
-
-    return lcoe_direction, cap_fac_direction, lcoe_overall, cap_fac_overall
+    return sim_res, Sector_frequency, P
 
 
 # define constants
-YAW_SCALE = 30
+YAW_SCALE = 15
 
 
 # optimise for a single direction
-def optimise_direction(
-    wfm, x, y, ws, wd, sim_res_base, Sector_frequency, P, lcoe_direction_base
-):
+def optimise_direction(wd, sim_res_ref, Sector_frequency, P):
+    # unpack values
+    wfm = sim_res_ref.windFarmModel
+    sim_res_ref = sim_res_ref.sel(wd=[wd])
+    x = sim_res_ref.x.values.tolist()
+    y = sim_res_ref.y.values.tolist()
+    ws = sim_res_ref.ws.values.tolist()
+    wt = sim_res_ref.wt.values.tolist()
 
     # define constants
-    ws = sim_res_base.ws.values.tolist()
-    yaw_shape = (len(sim_res_base.wt), 1, len(ws))
-    cut_in_index = np.argmax(
-        sim_res_base.windFarmModel.windTurbines.power(sim_res_base.ws) > 0
-    )
-    cut_in_speed = sim_res_base.ws[cut_in_index].values.tolist()
+    yaw_shape = (len(wt), 1, len(ws))
+    cut_in_speed_range = np.arange(0, 30.1, 0.1)
+    cut_in_index = np.argmax(wfm.windTurbines.power(cut_in_speed_range) > 0)
+    cut_in_speed = cut_in_speed_range[cut_in_index].tolist()
 
     # optimise for power output across independent wind speeds
     logging.info("starting power based optimisation")
     yaw_opt_power = np.full(yaw_shape, np.nan)
-    next_x0 = np.ones(len(sim_res_base.wt)) / YAW_SCALE
-    for i, ws_ in enumerate(sim_res_base.ws.values):
+    next_x0 = np.ones(len(wt)) / YAW_SCALE
+    for i, ws_ in enumerate(ws):
         if ws_ >= cut_in_speed:
             # define objective function for power
             def obj_power_single(yaw_norm):
-                sim_res = run_sim(
-                    wfm=wfm, x=x, y=y, yaw=yaw_norm * YAW_SCALE, ws=ws_, wd=wd
+                sim_res, _, _ = run_sim(
+                    wfm=wfm,
+                    x=x,
+                    y=y,
+                    yaw=yaw_norm * YAW_SCALE,
+                    ws=[ws_],
+                    wd=[wd],
+                    sim_res_ref=sim_res_ref.sel(ws=[ws_]),
+                    Sector_frequency=Sector_frequency,
+                    P=P,
                 )
-                power = sim_res.Power.sel(ws=ws_, wd=wd).sum("wt")
-                power_base = sim_res_base.Power.sel(ws=ws_, wd=wd).sum("wt")
-                obj = -(power / power_base).values.tolist()
+                power = sim_res.Power.sum("wt")
+                power_ref = sim_res_ref.sel(ws=[ws_]).Power.sum("wt")
+                obj = -(power / power_ref).sel(ws=ws_, wd=wd).values.tolist()
                 return obj
 
             res = optimize.minimize(fun=obj_power_single, x0=next_x0)
             next_x0 = res.x
             yaw_opt_power[:, :, i] = res.x.reshape(-1, 1) * YAW_SCALE
         else:
-            yaw_opt_power[:, :, i] = np.zeros((len(sim_res_base.wt), 1))
+            yaw_opt_power[:, :, i] = np.zeros((len(wt), 1))
 
     # define objective function for lcoe
     def obj_lcoe_single(yaw_norm):
-        sim_res = run_sim(
-            wfm=wfm, x=x, y=y, yaw=yaw_norm.reshape(yaw_shape) * YAW_SCALE, ws=ws, wd=wd
-        )
-        aep, lcoe, _ = calc_metrics(
-            sim_res=sim_res,
-            sim_res_base=sim_res_base,
+        sim_res, _, _ = run_sim(
+            wfm=wfm,
+            x=x,
+            y=y,
+            yaw=yaw_norm.reshape(yaw_shape) * YAW_SCALE,
+            ws=ws,
+            wd=[wd],
+            sim_res_ref=sim_res_ref,
             Sector_frequency=Sector_frequency,
             P=P,
         )
-        _, _, lcoe_overall, _ = aggregate_metrics(
-            aep=aep, lcoe=lcoe, Sector_frequency=Sector_frequency
-        )
-        obj = (lcoe_overall / lcoe_direction_base).values.tolist()
+        obj = (sim_res.lcoe_direction / sim_res_ref.lcoe_direction).values.tolist()
         return obj
 
     # optimise for lcoe across all wind speeds

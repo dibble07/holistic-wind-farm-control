@@ -14,6 +14,3 @@ Investigation of the impact of holistic control of turbines in a wind farm
     - Lookup table/surrogate model
     - Low fidelity model
     - LiDAR adjustments
-
-## To do
-Add metric calculation to simulation running function/output
