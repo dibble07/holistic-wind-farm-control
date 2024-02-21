@@ -67,7 +67,7 @@ wfm_lossless = PropagateDownwind(
 
 
 # run simulation
-def run_sim(wfm=wfm_low, x=wt9_x, y=wt9_y, yaw=0, ws=WS_DEFAULT, wd=WD_DEFAULT):
+def run_sim(wfm, x, y, yaw, ws, wd):
     sim_res = wfm(
         x=x,
         y=y,
@@ -122,12 +122,12 @@ def run_sim_and_calculate_metrics(
     sim_res_base,
     Sector_frequency,
     P,
-    wfm=wfm_low,
-    x=wt9_x,
-    y=wt9_y,
-    yaw=0,
-    ws=WS_DEFAULT,
-    wd=WD_DEFAULT,
+    wfm,
+    x,
+    y,
+    yaw,
+    ws,
+    wd,
     show=False,
 ):
     sim_res = run_sim(wfm=wfm, x=x, y=y, yaw=yaw, ws=ws, wd=wd)
@@ -167,7 +167,9 @@ YAW_SCALE = 30
 
 
 # optimise for a single direction
-def optimise_direction(wd, sim_res_base, Sector_frequency, P, lcoe_direction_base):
+def optimise_direction(
+    wfm, x, y, ws, wd, sim_res_base, Sector_frequency, P, lcoe_direction_base
+):
 
     # define constants
     ws = sim_res_base.ws.values.tolist()
@@ -185,7 +187,9 @@ def optimise_direction(wd, sim_res_base, Sector_frequency, P, lcoe_direction_bas
         if ws_ >= cut_in_speed:
             # define objective function for power
             def obj_power_single(yaw_norm):
-                sim_res = run_sim(yaw=yaw_norm * YAW_SCALE, ws=ws_, wd=wd)
+                sim_res = run_sim(
+                    wfm=wfm, x=x, y=y, yaw=yaw_norm * YAW_SCALE, ws=ws_, wd=wd
+                )
                 power = sim_res.Power.sel(ws=ws_, wd=wd).sum("wt")
                 power_base = sim_res_base.Power.sel(ws=ws_, wd=wd).sum("wt")
                 obj = -(power / power_base).values.tolist()
@@ -199,7 +203,9 @@ def optimise_direction(wd, sim_res_base, Sector_frequency, P, lcoe_direction_bas
 
     # define objective function for lcoe
     def obj_lcoe_single(yaw_norm):
-        sim_res = run_sim(yaw=yaw_norm.reshape(yaw_shape) * YAW_SCALE, wd=wd)
+        sim_res = run_sim(
+            wfm=wfm, x=x, y=y, yaw=yaw_norm.reshape(yaw_shape) * YAW_SCALE, ws=ws, wd=wd
+        )
         aep, lcoe, _ = calc_metrics(
             sim_res=sim_res,
             sim_res_base=sim_res_base,
