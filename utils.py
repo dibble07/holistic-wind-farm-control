@@ -158,16 +158,15 @@ def optimise_direction(wd, sim_res_ref, Sector_frequency, P):
 
     # define constants
     yaw_shape = (len(wt), 1, len(ws))
-    cut_in_speed_range = np.arange(0, 30.1, 0.1)
-    cut_in_index = np.argmax(wfm.windTurbines.power(cut_in_speed_range) > 0)
-    cut_in_speed = cut_in_speed_range[cut_in_index].tolist()
+    ind_cut_in = np.argmax(wfm.windTurbines.power(ws) > 0)
+    ws_cut_in = ws[ind_cut_in]  # .tolist()
 
     # optimise for power output across independent wind speeds
     logging.info("starting power based optimisation")
     yaw_opt_power = np.full(yaw_shape, np.nan)
     next_x0 = np.ones(len(wt)) / YAW_SCALE
     for i, ws_ in enumerate(ws):
-        if ws_ >= cut_in_speed:
+        if ws_ >= ws_cut_in:
             # define objective function for power
             def obj_power_single(yaw_norm):
                 sim_res, _, _ = run_sim(
