@@ -155,41 +155,34 @@ def optimise_direction(wd, sim_res_ref, Sector_frequency, P):
     y = sim_res_ref.y.values.tolist()
     ws = sim_res_ref.ws.values.tolist()
     wt = sim_res_ref.wt.values.tolist()
-
-    # define constants
     yaw_shape = (len(wt), 1, len(ws))
-    ind_cut_in = np.argmax(wfm.windTurbines.power(ws) > 0)
-    ws_cut_in = ws[ind_cut_in]  # .tolist()
 
     # optimise for power output across independent wind speeds
     logging.info("starting power based optimisation")
     yaw_opt_power = np.full(yaw_shape, np.nan)
     next_x0 = np.ones(len(wt)) / YAW_SCALE
     for i, ws_ in enumerate(ws):
-        if ws_ >= ws_cut_in:
-            # define objective function for power
-            def obj_power_single(yaw_norm):
-                sim_res, _, _ = run_sim(
-                    wfm=wfm,
-                    x=x,
-                    y=y,
-                    yaw=yaw_norm * YAW_SCALE,
-                    ws=[ws_],
-                    wd=[wd],
-                    sim_res_ref=sim_res_ref.sel(ws=[ws_]),
-                    Sector_frequency=Sector_frequency,
-                    P=P,
-                )
-                power = sim_res.Power.sum("wt")
-                power_ref = sim_res_ref.sel(ws=[ws_]).Power.sum("wt")
-                obj = -(power / power_ref).sel(ws=ws_, wd=wd).values.tolist()
-                return obj
+        # define objective function for power
+        def obj_power_single(yaw_norm):
+            sim_res, _, _ = run_sim(
+                wfm=wfm,
+                x=x,
+                y=y,
+                yaw=yaw_norm * YAW_SCALE,
+                ws=[ws_],
+                wd=[wd],
+                sim_res_ref=sim_res_ref.sel(ws=[ws_]),
+                Sector_frequency=Sector_frequency,
+                P=P,
+            )
+            power = sim_res.Power.sum("wt")
+            power_ref = sim_res_ref.sel(ws=[ws_]).Power.sum("wt")
+            obj = -(power / power_ref).sel(ws=ws_, wd=wd).values.tolist()
+            return obj
 
-            res = optimize.minimize(fun=obj_power_single, x0=next_x0)
-            next_x0 = res.x
-            yaw_opt_power[:, :, i] = res.x.reshape(-1, 1) * YAW_SCALE
-        else:
-            yaw_opt_power[:, :, i] = np.zeros((len(wt), 1))
+        res = optimize.minimize(fun=obj_power_single, x0=next_x0)
+        next_x0 = res.x
+        yaw_opt_power[:, :, i] = res.x.reshape(-1, 1) * YAW_SCALE
 
     # define objective function for lcoe
     def obj_lcoe_single(yaw_norm):
