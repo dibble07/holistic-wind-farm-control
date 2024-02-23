@@ -8,6 +8,8 @@ Investigation of the impact of holistic control of turbines in a wind farm
 ## To investigate
 - Curtailment of front turbines as well as steering
 - Variable hub height (more for floating turbines)
+- Impact of baseline turbulence
+- Analyse time series wind resource
 - Off design performance
 - Real time steering values
     - CNN
