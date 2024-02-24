@@ -42,7 +42,7 @@ wfm_high = All2AllIterative(
     windTurbines=V80(),
     wake_deficitModel=FugaDeficit(),
     superpositionModel=LinearSum(),
-    deflectionModel=FugaDeflection(),
+    deflectionModel=JimenezWakeDeflection(),
     turbulenceModel=STF2017TurbulenceModel(),
     rotorAvgModel=CGIRotorAvg(7),
 )
@@ -53,7 +53,7 @@ wfm_low = PropagateDownwind(
     superpositionModel=LinearSum(),
     deflectionModel=JimenezWakeDeflection(),
     turbulenceModel=STF2017TurbulenceModel(),
-    rotorAvgModel=CGIRotorAvg(7),
+    rotorAvgModel=None,
 )
 wfm_lossless = PropagateDownwind(
     site=Hornsrev1Site(),
