@@ -33,7 +33,7 @@ LIFESPAN = 30
 DOWNTIME = 0.02
 
 # define default ranges
-WS_DEFAULT = np.arange(0, 31)
+WS_DEFAULT = np.arange(0, 20.01, 1)
 WD_DEFAULT = np.arange(0, 360, 15)
 
 # load farm models
@@ -53,7 +53,7 @@ wfm_low = PropagateDownwind(
     superpositionModel=LinearSum(),
     deflectionModel=JimenezWakeDeflection(),
     turbulenceModel=STF2017TurbulenceModel(),
-    rotorAvgModel=None,
+    rotorAvgModel=CGIRotorAvg(7),
 )
 wfm_lossless = PropagateDownwind(
     site=Hornsrev1Site(),
