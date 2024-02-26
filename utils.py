@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 from py_wake.deficit_models import FugaDeficit, NoWakeDeficit, ZongGaussianDeficit
-from py_wake.deflection_models import FugaDeflection, JimenezWakeDeflection
+from py_wake.deflection_models import JimenezWakeDeflection
 from py_wake.examples.data.hornsrev1 import (
     Hornsrev1Site,
     V80,
