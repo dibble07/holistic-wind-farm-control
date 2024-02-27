@@ -199,7 +199,7 @@ def optimise_direction(wd, sim_res_ref_low, sim_res_ref_high, Sector_frequency, 
             fun=obj_power_single,
             x0=next_x0,
             method="SLSQP",
-            tol=1e-5,
+            options=dict(ftol=1e-8),
         )
         next_x0 = res.x
         yaw_opt_power[:, :, i] = res.x.reshape(-1, 1) * YAW_SCALE
@@ -230,7 +230,7 @@ def optimise_direction(wd, sim_res_ref_low, sim_res_ref_high, Sector_frequency, 
         fun=obj_lcoe_single,
         x0=yaw_opt_power.ravel() / YAW_SCALE,
         method="SLSQP",
-        tol=1e-6,
+        options=dict(ftol=1e-8),
     )
     yaw_opt_lcoe = res.x.reshape(yaw_shape) * YAW_SCALE
 
