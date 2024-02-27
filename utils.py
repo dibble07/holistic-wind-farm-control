@@ -34,7 +34,7 @@ DOWNTIME = 0.02
 
 # define default ranges
 WS_DEFAULT = np.arange(0, 25.01, 1)
-WD_DEFAULT = np.arange(0, 360, 15)
+WD_DEFAULT = np.arange(0, 360, 30)
 
 # load farm models
 wfm_high = All2AllIterative(
