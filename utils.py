@@ -241,10 +241,8 @@ def optimise_direction(wd, sim_res_ref_low, sim_res_ref_high, Sector_frequency, 
         logging.warning(
             f"optimising based on power resulted in a better lcoe reduction: {obj_power:.6f} vs {obj_lcoe:.6f}"
         )
-    if res.nit == 1:
-        logging.warning("only 1 iteration was performed")
     if not res.success:
         logging.warning(f"optimisation was not successful: {res.message}")
     logging.info(f"optimisation complete (fun = {res.fun:.6f}, nit = {res.nit:.0f})")
 
-    return yaw_opt_power, yaw_opt_lcoe
+    return np.squeeze(yaw_opt_power), np.squeeze(yaw_opt_lcoe)
