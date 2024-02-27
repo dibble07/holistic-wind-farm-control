@@ -6,14 +6,12 @@ Investigation of the impact of holistic control of turbines in a wind farm
 - [optimisation.ipynb](optimisation.ipynb) - Optimisation of yaw values for different wind and site conditions to reduce cost
 
 ## To investigate
-- Curtailment of front turbines as well as steering
-- Variable hub height (more for floating turbines)
-- Analyse time series wind resource
-    - Impact of varying baseline turbulence
-- Off design performance
-    - Non-homogenous wind direction
+- Larger wind farms
 - Real time steering values
     - CNN
-    - Lookup table/surrogate model
+    - [Lookup table/surrogate model](https://adaptive.readthedocs.io/en/latest/algorithms_and_examples.html#examples)
     - Low fidelity model
     - LiDAR adjustments
+- Analyse time series wind resource
+    - Impact of varying baseline turbulence
+- Curtailment of front turbines as well as steering
