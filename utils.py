@@ -94,6 +94,7 @@ def run_sim(
 
     # subset baseline simulation
     if sim_res_ref is None:
+        logging.warning("no reference simulation provided")
         sim_res_ref = sim_res.sel(wd=wd)
     else:
         for attr in ["wd", "ws", "wt"]:
