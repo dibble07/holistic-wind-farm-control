@@ -1,6 +1,7 @@
 import logging
 
 import numpy as np
+from matplotlib.colors import LinearSegmentedColormap
 from py_wake.deficit_models import FugaDeficit, NoWakeDeficit, ZongGaussianDeficit
 from py_wake.deflection_models import JimenezWakeDeflection
 from py_wake.examples.data.hornsrev1 import (
@@ -18,6 +19,11 @@ from py_wake.superposition_models import LinearSum
 from py_wake.turbulence_models import STF2017TurbulenceModel
 from py_wake.wind_farm_models import All2AllIterative, PropagateDownwind
 from scipy import optimize
+
+# define colormap that shows bad, neutral and good intuitively
+cmap = LinearSegmentedColormap.from_list(
+    name="mymap", colors=["tab:red", "w", "tab:green"]
+)
 
 # loads cost values
 # capex and opex https://atb.nrel.gov/electricity/2023/index

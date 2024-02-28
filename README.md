@@ -15,3 +15,6 @@ Investigation of the impact of holistic control of turbines in a wind farm
 - Analyse time series wind resource
     - Impact of varying baseline turbulence
 - Curtailment of front turbines as well as steering
+
+## To do
+- Creatting plotting helper functions file
