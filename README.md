@@ -17,5 +17,4 @@ Investigation of the impact of holistic control of turbines in a wind farm
 - Curtailment of front turbines as well as steering
 
 ## To do
-- Custom colourmap
 - Creatting plotting helper functions file
