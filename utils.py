@@ -46,7 +46,7 @@ DOWNTIME = 0.02
 WS_DEFAULT = np.arange(0, 25.01, 1)
 WD_DEFAULT = np.arange(0, 360, 30)
 
-# define own version of turbine that is smoother within the operating wind speeds but not extrapolating beyond cut in or rated wind speed
+# interpolate smoothly between datapoints used to define turbine
 pchip = PchipInterpolator(
     power_curve[:, 0], np.vstack((power_curve[:, 1], ct_curve[:, 1])).T
 )
@@ -58,6 +58,7 @@ power_curve_fine = np.hstack(
 )
 
 
+# define own version of turbine that is smoother data
 class V80(WindTurbine):
     def __init__(self, method="linear"):
         """
