@@ -6,7 +6,10 @@ from py_wake.deficit_models import FugaDeficit, NoWakeDeficit, ZongGaussianDefic
 from py_wake.deflection_models import JimenezWakeDeflection
 from py_wake.examples.data.hornsrev1 import (
     Hornsrev1Site,
-    V80,
+    WindTurbine,
+    PowerCtTabular,
+    ct_curve,
+    power_curve,
     wt9_x,
     wt9_y,
     wt16_x,
@@ -18,7 +21,8 @@ from py_wake.rotor_avg_models import CGIRotorAvg
 from py_wake.superposition_models import LinearSum
 from py_wake.turbulence_models import STF2017TurbulenceModel
 from py_wake.wind_farm_models import All2AllIterative, PropagateDownwind
-from scipy import optimize
+from scipy.optimize import minimize
+from scipy.interpolate import PchipInterpolator
 
 # define colormap that shows bad, neutral and good intuitively
 cmap = LinearSegmentedColormap.from_list(
@@ -41,6 +45,41 @@ DOWNTIME = 0.02
 # define default ranges
 WS_DEFAULT = np.arange(0, 25.01, 1)
 WD_DEFAULT = np.arange(0, 360, 30)
+
+# define own version of turbine that is smoother within the operating wind speeds but not extrapolating beyond cut in or rated wind speed
+pchip = PchipInterpolator(
+    power_curve[:, 0], np.vstack((power_curve[:, 1], ct_curve[:, 1])).T
+)
+power_curve_fine_x = np.arange(
+    power_curve[:, 0].min(), power_curve[:, 0].max() + 0.001, 0.1
+)
+power_curve_fine = np.hstack(
+    (power_curve_fine_x.reshape(-1, 1), pchip(power_curve_fine_x))
+)
+
+
+class V80(WindTurbine):
+    def __init__(self, method="linear"):
+        """
+        Parameters
+        ----------
+        method : {'linear', 'pchip'}
+            linear(fast) or pchip(smooth and gradient friendly) interpolation
+        """
+        WindTurbine.__init__(
+            self,
+            name="V80",
+            diameter=80,
+            hub_height=70,
+            powerCtFunction=PowerCtTabular(
+                power_curve_fine[:, 0],
+                power_curve_fine[:, 1],
+                "w",
+                power_curve_fine[:, 2],
+                method=method,
+            ),
+        )
+
 
 # load farm models
 wfm_high = All2AllIterative(
@@ -201,7 +240,7 @@ def optimise_direction(wd, sim_res_ref_low, sim_res_ref_high, Sector_frequency, 
 
         assert np.isclose(obj_power_single(np.zeros(len(wt))), -1)
 
-        res = optimize.minimize(
+        res = minimize(
             fun=obj_power_single,
             x0=next_x0,
             method="SLSQP",
@@ -232,7 +271,7 @@ def optimise_direction(wd, sim_res_ref_low, sim_res_ref_high, Sector_frequency, 
 
     # optimise for lcoe across all wind speeds
     logging.info("starting LCoE based optimisation")
-    res = optimize.minimize(
+    res = minimize(
         fun=obj_lcoe_single,
         x0=yaw_opt_power.ravel() / YAW_SCALE,
         method="SLSQP",
