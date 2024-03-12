@@ -17,4 +17,6 @@ Investigation of the impact of holistic control of turbines in a wind farm
 - Curtailment of front turbines as well as steering
 
 ## To do
-- Creatting plotting helper functions file
+- Drop plots about capacity factor
+- Increase number of turbines
+- Create own version of V80 turbine with high resolution with continuous gradients but no output below cut in speed
