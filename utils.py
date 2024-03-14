@@ -1,4 +1,5 @@
 import logging
+import time
 
 import numpy as np
 from matplotlib.colors import LinearSegmentedColormap
@@ -217,7 +218,7 @@ def optimise_direction(wd, sim_res_ref_low, sim_res_ref_high, Sector_frequency, 
             raise ValueError(msg)
 
     # optimise for power output across independent wind speeds
-    logging.info("starting power based optimisation")
+    logging.info(f"starting power based optimisation (wd={wd:.1f})")
     yaw_opt_power = np.full(yaw_shape, np.nan)
     next_x0 = np.ones(len(wt)) / YAW_SCALE
     for i, ws_ in enumerate(ws):
@@ -271,14 +272,28 @@ def optimise_direction(wd, sim_res_ref_low, sim_res_ref_high, Sector_frequency, 
     assert np.isclose(obj_lcoe_single(np.zeros(yaw_shape)), 1)
 
     # optimise for lcoe across all wind speeds
-    logging.info("starting LCoE based optimisation")
+    logging.info(f"starting LCoE based optimisation (wd={wd:.1f}")
+    start_wall = time.perf_counter()
+    start_cpu = time.process_time()
     res = minimize(
         fun=obj_lcoe_single,
         x0=yaw_opt_power.ravel() / YAW_SCALE,
         method="SLSQP",
         options=dict(ftol=1e-8),
     )
+    duration_wall = time.perf_counter() - start_wall
+    duration_cpu = time.process_time() - start_cpu
     yaw_opt_lcoe = res.x.reshape(yaw_shape) * YAW_SCALE
+    opt_stats = {
+        "success": res.success,
+        "message": res.message,
+        "fun": res.fun,
+        "nit": res.nit,
+        "nfev": res.nfev,
+        "njev": res.njev,
+        "duration_wall": duration_wall,
+        "duration_cpu": duration_cpu,
+    }
 
     # assess result
     obj_power = obj_lcoe_single(yaw_opt_power.ravel() / YAW_SCALE)
@@ -291,4 +306,4 @@ def optimise_direction(wd, sim_res_ref_low, sim_res_ref_high, Sector_frequency, 
         logging.warning(f"optimisation was not successful: {res.message}")
     logging.info(f"optimisation complete (fun = {res.fun:.6f}, nit = {res.nit:.0f})")
 
-    return np.squeeze(yaw_opt_power), np.squeeze(yaw_opt_lcoe)
+    return np.squeeze(yaw_opt_power), np.squeeze(yaw_opt_lcoe), opt_stats

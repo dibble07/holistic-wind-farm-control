@@ -18,5 +18,4 @@ Investigation of the impact of holistic control of turbines in a wind farm
 - Curtailment of front turbines as well as steering
 
 ## To do
-- Calculate time of each optimisation (wall cloack and cpu)
-- Return optimisation stats
+- Improve optimisation for slow wind directions
