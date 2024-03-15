@@ -221,6 +221,7 @@ def optimise_direction(wd, sim_res_ref_low, sim_res_ref_high, Sector_frequency, 
     logging.info(f"starting power based optimisation (wd={wd:.1f})")
     yaw_opt_power = np.full(yaw_shape, np.nan)
     next_x0 = np.ones(len(wt)) / YAW_SCALE
+    start_cpu = time.process_time()
     for i, ws_ in enumerate(ws):
         # define objective function for power
         def obj_power_single(yaw_norm):
@@ -250,6 +251,7 @@ def optimise_direction(wd, sim_res_ref_low, sim_res_ref_high, Sector_frequency, 
         )
         next_x0 = res.x
         yaw_opt_power[:, :, i] = res.x.reshape(-1, 1) * YAW_SCALE
+    duration_power = time.process_time() - start_cpu
 
     # define objective function for lcoe
     def obj_lcoe_single(yaw_norm):
@@ -273,7 +275,6 @@ def optimise_direction(wd, sim_res_ref_low, sim_res_ref_high, Sector_frequency, 
 
     # optimise for lcoe across all wind speeds
     logging.info(f"starting LCoE based optimisation (wd={wd:.1f}")
-    start_wall = time.perf_counter()
     start_cpu = time.process_time()
     res = minimize(
         fun=obj_lcoe_single,
@@ -281,8 +282,7 @@ def optimise_direction(wd, sim_res_ref_low, sim_res_ref_high, Sector_frequency, 
         method="SLSQP",
         options=dict(ftol=1e-8),
     )
-    duration_wall = time.perf_counter() - start_wall
-    duration_cpu = time.process_time() - start_cpu
+    duration_lcoe = time.process_time() - start_cpu
     yaw_opt_lcoe = res.x.reshape(yaw_shape) * YAW_SCALE
     opt_stats = {
         "success": res.success,
@@ -291,8 +291,8 @@ def optimise_direction(wd, sim_res_ref_low, sim_res_ref_high, Sector_frequency, 
         "nit": res.nit,
         "nfev": res.nfev,
         "njev": res.njev,
-        "duration_wall": duration_wall,
-        "duration_cpu": duration_cpu,
+        "duration_lcoe": duration_lcoe,
+        "duration_power": duration_power,
     }
 
     # assess result

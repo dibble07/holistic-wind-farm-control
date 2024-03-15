@@ -7537,7 +7537,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>/var/folders/cf/l2k6zjsj3n5g2wgcr4xyq3880000gp/T/ipykernel_9238/2347966574.py:8: DeprecationWarning: 
+<pre>/var/folders/cf/l2k6zjsj3n5g2wgcr4xyq3880000gp/T/ipykernel_4011/2347966574.py:8: DeprecationWarning: 
 Pyarrow will become a required dependency of pandas in the next major release of pandas (pandas 3.0),
 (to allow more performant data types, such as the Arrow string type, and better interoperability with other libraries)
 but was not found to be installed on your system.
@@ -7590,8 +7590,8 @@ please provide us feedback at https://github.com/pandas-dev/pandas/issues/54466
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>09:57:16:WARNING:P renormalised as total probability was 0.9997679498494156
-09:57:16:WARNING:no reference simulation provided
+<pre>07:35:32:WARNING:P renormalised as total probability was 0.9997679498494156
+07:35:32:WARNING:no reference simulation provided
 </pre>
 </div>
 </div>
@@ -7672,9 +7672,9 @@ please provide us feedback at https://github.com/pandas-dev/pandas/issues/54466
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>09:57:16:WARNING:no reference simulation provided
-09:57:16:WARNING:no reference simulation provided
-09:57:16:WARNING:no reference simulation provided
+<pre>07:35:32:WARNING:no reference simulation provided
+07:35:32:WARNING:no reference simulation provided
+07:35:33:WARNING:no reference simulation provided
 </pre>
 </div>
 </div>
@@ -7771,7 +7771,9 @@ Capacity factor [%]: 49.773
         <span class="n">argument_type</span><span class="o">=</span><span class="s2">"kwargs"</span><span class="p">,</span>
     <span class="p">)</span>
 <span class="k">else</span><span class="p">:</span>
-    <span class="n">simulations_out</span> <span class="o">=</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">optimise_direction</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="k">for</span> <span class="n">kwargs</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">simulations_in</span><span class="p">)]</span>
+    <span class="n">simulations_out</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">utils</span><span class="o">.</span><span class="n">optimise_direction</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="k">for</span> <span class="n">kwargs</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">simulations_in</span><span class="p">)</span>
+    <span class="p">]</span>
 <span class="n">opt_stats</span> <span class="o">=</span> <span class="p">{}</span>
 <span class="k">for</span> <span class="nb">input</span><span class="p">,</span> <span class="p">(</span><span class="n">yaw_opt_init</span><span class="p">,</span> <span class="n">yaw_opt_final</span><span class="p">,</span> <span class="n">opt_stats_</span><span class="p">)</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span>
     <span class="nb">zip</span><span class="p">(</span><span class="n">simulations_in</span><span class="p">,</span> <span class="n">simulations_out</span><span class="p">),</span>
@@ -7829,13 +7831,13 @@ Capacity factor [%]: 49.773
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [19]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="c1"># display optimisation stats</span>
 <span class="n">df_opt_stats</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">opt_stats</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
 <span class="n">df_opt_stats</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">"wd"</span>
-<span class="n">df_opt_stats</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s2">"nfev"</span><span class="p">,</span><span class="s2">"duration_cpu"</span><span class="p">])</span>
+<span class="n">df_opt_stats</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s2">"nfev"</span><span class="p">,</span> <span class="s2">"duration_lcoe"</span><span class="p">])</span>
 </pre></div>
 </div>
 </div>
@@ -7846,7 +7848,7 @@ Capacity factor [%]: 49.773
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[19]:</div>
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[7]:</div>
 <div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
 <div>
 <style scoped="">
@@ -7872,8 +7874,8 @@ Capacity factor [%]: 49.773
 <th>nit</th>
 <th>nfev</th>
 <th>njev</th>
-<th>duration_wall</th>
-<th>duration_cpu</th>
+<th>duration_lcoe</th>
+<th>duration_power</th>
 </tr>
 <tr>
 <th>wd</th>
@@ -7896,8 +7898,8 @@ Capacity factor [%]: 49.773
 <td>3</td>
 <td>602</td>
 <td>3</td>
-<td>13.805859</td>
-<td>13.466739</td>
+<td>13.140877</td>
+<td>17.265968</td>
 </tr>
 <tr>
 <th>0</th>
@@ -7907,8 +7909,8 @@ Capacity factor [%]: 49.773
 <td>4</td>
 <td>805</td>
 <td>4</td>
-<td>18.365306</td>
-<td>18.095972</td>
+<td>17.546201</td>
+<td>19.785625</td>
 </tr>
 <tr>
 <th>300</th>
@@ -7918,8 +7920,8 @@ Capacity factor [%]: 49.773
 <td>6</td>
 <td>1194</td>
 <td>6</td>
-<td>19.913166</td>
-<td>19.835546</td>
+<td>20.053916</td>
+<td>8.653326</td>
 </tr>
 <tr>
 <th>120</th>
@@ -7929,8 +7931,8 @@ Capacity factor [%]: 49.773
 <td>6</td>
 <td>1194</td>
 <td>6</td>
-<td>22.137981</td>
-<td>21.667154</td>
+<td>21.391667</td>
+<td>8.615552</td>
 </tr>
 <tr>
 <th>210</th>
@@ -7940,8 +7942,8 @@ Capacity factor [%]: 49.773
 <td>7</td>
 <td>1394</td>
 <td>7</td>
-<td>25.825393</td>
-<td>25.203498</td>
+<td>25.053339</td>
+<td>6.835694</td>
 </tr>
 <tr>
 <th>240</th>
@@ -7951,8 +7953,8 @@ Capacity factor [%]: 49.773
 <td>14</td>
 <td>2789</td>
 <td>14</td>
-<td>49.584097</td>
-<td>48.944883</td>
+<td>48.565599</td>
+<td>11.138016</td>
 </tr>
 <tr>
 <th>30</th>
@@ -7962,8 +7964,8 @@ Capacity factor [%]: 49.773
 <td>15</td>
 <td>2986</td>
 <td>15</td>
-<td>51.71043</td>
-<td>50.171475</td>
+<td>51.911753</td>
+<td>6.729477</td>
 </tr>
 <tr>
 <th>150</th>
@@ -7973,8 +7975,8 @@ Capacity factor [%]: 49.773
 <td>23</td>
 <td>4584</td>
 <td>23</td>
-<td>78.864103</td>
-<td>78.14999</td>
+<td>77.621905</td>
+<td>10.932813</td>
 </tr>
 <tr>
 <th>330</th>
@@ -7984,8 +7986,8 @@ Capacity factor [%]: 49.773
 <td>25</td>
 <td>4979</td>
 <td>25</td>
-<td>79.784908</td>
-<td>79.169247</td>
+<td>81.898856</td>
+<td>10.712598</td>
 </tr>
 <tr>
 <th>60</th>
@@ -7995,8 +7997,8 @@ Capacity factor [%]: 49.773
 <td>27</td>
 <td>5376</td>
 <td>27</td>
-<td>90.149907</td>
-<td>89.077687</td>
+<td>90.367043</td>
+<td>11.104499</td>
 </tr>
 <tr>
 <th>270</th>
@@ -8006,8 +8008,8 @@ Capacity factor [%]: 49.773
 <td>37</td>
 <td>7365</td>
 <td>37</td>
-<td>117.022535</td>
-<td>116.454464</td>
+<td>118.000974</td>
+<td>14.05946</td>
 </tr>
 <tr>
 <th>90</th>
@@ -8017,8 +8019,8 @@ Capacity factor [%]: 49.773
 <td>68</td>
 <td>13547</td>
 <td>68</td>
-<td>218.943087</td>
-<td>216.664684</td>
+<td>215.101893</td>
+<td>14.53837</td>
 </tr>
 </tbody>
 </table>
