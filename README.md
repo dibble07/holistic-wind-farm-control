@@ -7,6 +7,7 @@ Investigation of the impact of holistic control of turbines in a wind farm
 
 ## To investigate
 - Increase speed and direction resolution
+    - Fix oscillations around rated wind speed
 - Larger wind farms
 - Impact of varying baseline turbulence
 - Real time steering values
@@ -25,5 +26,3 @@ Investigation of the impact of holistic control of turbines in a wind farm
     - Intermediate optimisation
         - objective function as power
         - use high fidelity simulation
-    - Define jacobian callable
-        - decoupled across wind speeds
