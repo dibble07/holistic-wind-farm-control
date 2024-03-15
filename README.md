@@ -19,10 +19,3 @@ Investigation of the impact of holistic control of turbines in a wind farm
 - Curtailment of front turbines as well as steering
 
 ## To do
-- Improve optimisation for troublesome wind directions
-    - Reduce number of function evaluations for jacobian
-    - Gradient free optimisation algorithm
-    - SGD
-    - Intermediate optimisation
-        - objective function as power
-        - use high fidelity simulation

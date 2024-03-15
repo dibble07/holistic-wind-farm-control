@@ -195,27 +195,15 @@ YAW_SCALE = 15
 
 
 # optimise for a single direction
-def optimise_direction(wd, sim_res_ref_low, sim_res_ref_high, Sector_frequency, P):
+def optimise_direction(wd, sim_res_ref, Sector_frequency, P):
     # unpack values
-    wfm_low = sim_res_ref_low.windFarmModel
-    wfm_high = sim_res_ref_high.windFarmModel
-    sim_res_ref_low = sim_res_ref_low.sel(wd=[wd])
-    sim_res_ref_high = sim_res_ref_high.sel(wd=[wd])
-    x = sim_res_ref_low.x.values.tolist()
-    y = sim_res_ref_low.y.values.tolist()
-    ws = sim_res_ref_low.ws.values.tolist()
-    wt = sim_res_ref_low.wt.values.tolist()
+    wfm = sim_res_ref.windFarmModel
+    sim_res_ref = sim_res_ref.sel(wd=[wd])
+    x = sim_res_ref.x.values.tolist()
+    y = sim_res_ref.y.values.tolist()
+    ws = sim_res_ref.ws.values.tolist()
+    wt = sim_res_ref.wt.values.tolist()
     yaw_shape = (len(wt), 1, len(ws))
-
-    # check matching parameters in reference simulations
-    for attr in ["wd", "ws", "wt"]:
-        low = getattr(sim_res_ref_low, attr).values.tolist()
-        low = low if isinstance(low, list) else [low]
-        high = getattr(sim_res_ref_high, attr).values.tolist()
-        high = high if isinstance(high, list) else [high]
-        if low != high:
-            msg = f"Simulations have different {attr} values. {low} vs {high}"
-            raise ValueError(msg)
 
     # optimise for power output across independent wind speeds
     logging.info(f"starting power based optimisation (wd={wd:.1f})")
@@ -224,27 +212,27 @@ def optimise_direction(wd, sim_res_ref_low, sim_res_ref_high, Sector_frequency, 
     start_cpu = time.process_time()
     for i, ws_ in enumerate(ws):
         # define objective function for power
-        def obj_power_single(yaw_norm):
+        def obj_power(yaw_norm):
             sim_res, _, _ = run_sim(
-                wfm=wfm_low,
+                wfm=wfm,
                 x=x,
                 y=y,
                 yaw=yaw_norm * YAW_SCALE,
                 ws=[ws_],
                 wd=[wd],
-                sim_res_ref=sim_res_ref_low.sel(ws=[ws_]),
+                sim_res_ref=sim_res_ref.sel(ws=[ws_]),
                 Sector_frequency=Sector_frequency,
                 P=P,
             )
             power = sim_res.Power.sum("wt")
-            power_ref = sim_res_ref_low.sel(ws=[ws_]).Power.sum("wt")
+            power_ref = sim_res_ref.sel(ws=[ws_]).Power.sum("wt")
             obj = -(power / power_ref).sel(ws=ws_, wd=wd).values.tolist()
             return obj
 
-        assert np.isclose(obj_power_single(np.zeros(len(wt))), -1)
+        assert np.isclose(obj_power(np.zeros(len(wt))), -1)
 
         res = minimize(
-            fun=obj_power_single,
+            fun=obj_power,
             x0=next_x0,
             method="SLSQP",
             options=dict(ftol=1e-8),
@@ -254,30 +242,28 @@ def optimise_direction(wd, sim_res_ref_low, sim_res_ref_high, Sector_frequency, 
     duration_power = time.process_time() - start_cpu
 
     # define objective function for lcoe
-    def obj_lcoe_single(yaw_norm):
+    def obj_lcoe(yaw_norm):
         sim_res, _, _ = run_sim(
-            wfm=wfm_high,
+            wfm=wfm,
             x=x,
             y=y,
             yaw=yaw_norm.reshape(yaw_shape) * YAW_SCALE,
             ws=ws,
             wd=[wd],
-            sim_res_ref=sim_res_ref_high,
+            sim_res_ref=sim_res_ref,
             Sector_frequency=Sector_frequency,
             P=P,
         )
-        obj = (
-            sim_res.lcoe_direction / sim_res_ref_high.lcoe_direction
-        ).values.tolist()[0]
+        obj = (sim_res.lcoe_direction / sim_res_ref.lcoe_direction).values.tolist()[0]
         return obj
 
-    assert np.isclose(obj_lcoe_single(np.zeros(yaw_shape)), 1)
+    assert np.isclose(obj_lcoe(np.zeros(yaw_shape)), 1)
 
     # optimise for lcoe across all wind speeds
     logging.info(f"starting LCoE based optimisation (wd={wd:.1f}")
     start_cpu = time.process_time()
     res = minimize(
-        fun=obj_lcoe_single,
+        fun=obj_lcoe,
         x0=yaw_opt_power.ravel() / YAW_SCALE,
         method="SLSQP",
         options=dict(ftol=1e-8),
@@ -296,8 +282,8 @@ def optimise_direction(wd, sim_res_ref_low, sim_res_ref_high, Sector_frequency, 
     }
 
     # assess result
-    obj_power = obj_lcoe_single(yaw_opt_power.ravel() / YAW_SCALE)
-    obj_lcoe = obj_lcoe_single(yaw_opt_lcoe.ravel() / YAW_SCALE)
+    obj_power = obj_lcoe(yaw_opt_power.ravel() / YAW_SCALE)
+    obj_lcoe = obj_lcoe(yaw_opt_lcoe.ravel() / YAW_SCALE)
     if obj_power < obj_lcoe:
         logging.warning(
             f"optimising based on power resulted in a better lcoe reduction: {obj_power:.6f} vs {obj_lcoe:.6f}"
