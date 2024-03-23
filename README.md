@@ -6,17 +6,16 @@ Investigation of the impact of holistic control of turbines in a wind farm
 - [optimisation.ipynb](optimisation.ipynb) - Optimisation of yaw values for different wind and site conditions to reduce cost
 
 ## To investigate
+- Increase speed and direction resolution
+    - Fix oscillations around rated wind speed
 - Larger wind farms
+- Impact of varying baseline turbulence
 - Real time steering values
     - CNN
     - [Lookup table/surrogate model](https://adaptive.readthedocs.io/en/latest/algorithms_and_examples.html#examples)
-    - Low fidelity model
-    - LiDAR adjustments
-- Analyse time series wind resource
-    - Impact of varying baseline turbulence
+- Off design performance
+    - Local variations in speed and direction
+    - Measured using LiDAR
 - Curtailment of front turbines as well as steering
 
 ## To do
-- Increase speed and direction resolution
-- Increase number of turbines
-- Create own version of V80 turbine with high resolution with continuous gradients but no output below cut in speed
