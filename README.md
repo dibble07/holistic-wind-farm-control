@@ -5,6 +5,8 @@ Investigation of the impact of holistic control of turbines in a wind farm
 - [exploration.ipynb](exploration.ipynb) - Exploration of the impact of parameters such as yaw, wind speed and wind direction on cost and utilisation
 - [optimisation.ipynb](optimisation.ipynb) - Optimisation of yaw values for different wind and site conditions to reduce cost
 
+N.B. `.html` version of some files exist to see output of notebooks once run
+
 ## To investigate
 - Increase speed and direction resolution
     - Fix oscillations around rated wind speed
@@ -17,5 +19,3 @@ Investigation of the impact of holistic control of turbines in a wind farm
     - Local variations in speed and direction
     - Measured using LiDAR
 - Curtailment of front turbines as well as steering
-
-## To do
